@@ -141,10 +141,21 @@ function TabDados({ profile }: { profile: AdminProfile }) {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: DadosForm) => {
-      await api.patch(
-        `https://jagas.devgrc.com/v1/administradores/${profile.id_usuarios}`,
-        data
+      const respomse = await api.patch(
+        `/administradores/${profile.id_usuarios}`,
+        {
+          nome_usuario: data.nome_usuario,
+          email_: data.email_,
+          tipo_usuario: 1,
+        },
+        {
+          headers: {
+            gerador: 1,
+          },
+        }
       );
+
+      console.log('retorno:', respomse);
     },
     onSuccess: () => {
       setSaved(true);
@@ -470,7 +481,6 @@ function TabSeguranca({ profile }: { profile: AdminProfile }) {
 export function AdminProfile() {
   const [activeTab, setActiveTab] = useState<TabId>('dados');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const admin = useAdminAuthStore((s) => s.session.admin);
   const adminHash = admin?.hash;
