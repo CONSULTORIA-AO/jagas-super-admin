@@ -104,11 +104,6 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   });
 
-const getAvatar = (p: Pedido) =>
-  p.fotoCliente && p.fotoCliente !== '0'
-    ? `${import.meta.env.VITE_API_URL}images/customers/${p.fotoCliente}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nomeCliente)}&background=f97316&color=fff&size=64`;
-
 // Calcula o total do pedido somando os itens
 const calculateOrderTotal = (itens: ItemPedido[]) =>
   itens.reduce((acc, item) => acc + item.preco_total, 0);
@@ -174,9 +169,11 @@ const StatCard = ({ label, value, icon, iconColor, iconBg, index }: any) => (
 const RowMenu = ({
   pedido,
   onDelete,
+  onView, // Adicionado
 }: {
   pedido: Pedido;
   onDelete: (id: number) => void;
+  onView: (pedido: Pedido) => void; // Adicionado
 }) => {
   const [open, setOpen] = useState(false);
   return (
@@ -195,14 +192,14 @@ const RowMenu = ({
             exit={{ opacity: 0, scale: 0.9 }}
             className="absolute right-0 top-9 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1"
           >
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-600">
-              <Icon name="visibility" className="text-base" /> Ver Detalhes
-            </button>
             <button
-              onClick={() => onDelete(pedido.pedidoCotacaoId)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 text-red-600"
+              onClick={() => {
+                onView(pedido);
+                setOpen(false);
+              }} // Atualizado
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-600"
             >
-              <Icon name="delete" className="text-base" /> Excluir Pedido
+              <Icon name="visibility" className="text-base" /> Ver Detalhes
             </button>
           </motion.div>
         )}
@@ -243,10 +240,138 @@ const Pagination = ({ page, totalPages, total, pageSize, onPage }: any) => {
   );
 };
 
+const OrderDetailsModal = ({
+  pedido,
+  onClose,
+}: {
+  pedido: Pedido;
+  onClose: () => void;
+}) => {
+  if (!pedido) return null;
+
+  const sc = statusConfig[pedido.statusPedido] || statusConfig.default;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">
+              Detalhes do Pedido
+            </h3>
+            <p className="text-xs text-slate-500 font-mono">
+              {pedido.numero_cotacao}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+          >
+            <Icon name="close" className="text-slate-500" />
+          </button>
+        </div>
+
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          {/* Cliente Info */}
+          <div className="flex items-center gap-4 mb-8 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
+            <div className="flex-1">
+              <h4 className="font-bold text-slate-900">{pedido.nomeCliente}</h4>
+              <p className="text-sm text-slate-600 flex items-center gap-2">
+                <Icon name="mail" className="text-xs" /> {pedido.emailCliente}
+              </p>
+              <p className="text-sm text-slate-600 flex items-center gap-2">
+                <Icon name="call" className="text-xs" />{' '}
+                {pedido.telefoneCliente}
+              </p>
+            </div>
+            <div className="text-right">
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${sc.text} bg-white border border-current`}
+              >
+                <span className={`size-1.5 rounded-full ${sc.dot}`} />
+                {sc.label}
+              </span>
+            </div>
+          </div>
+
+          {/* Itens do Pedido */}
+          <h5 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Icon name="inventory_2" className="text-orange-500" /> Itens da
+            Cotação
+          </h5>
+          <div className="space-y-3 mb-8">
+            {pedido.itens.map((item) => (
+              <div
+                key={item.id_itens_pedido}
+                className="flex justify-between items-center p-3 border border-slate-100 rounded-lg hover:bg-slate-50"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Produto ID: #{item.produto_id}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Qtd: {item.quantidade} x {formatPrice(item.preco_unitario)}
+                  </p>
+                </div>
+                <p className="font-bold text-slate-900">
+                  {formatPrice(item.preco_total)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Totais e Datas */}
+          <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
+            <div>
+              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                Data do Pedido
+              </p>
+              <p className="text-sm text-slate-700">
+                {formatDate(pedido.pedido_time)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                Total Geral
+              </p>
+              <p className="text-2xl font-black text-orange-600">
+                {formatPrice(calculateOrderTotal(pedido.itens))}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+          >
+            Fechar
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function OrdersPage() {
   const queryClient = useQueryClient();
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
@@ -393,7 +518,7 @@ export function OrdersPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {[
-                    'Cliente',
+                    'ID',
                     'Nº Cotação',
                     'Total',
                     'Itens',
@@ -442,13 +567,9 @@ export function OrdersPage() {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={getAvatar(pedido)}
-                              className="size-9 rounded-full object-cover bg-slate-100"
-                            />
                             <div>
                               <p className="text-sm font-bold text-slate-900">
-                                {pedido.nomeCliente}
+                                {pedido.pedidoCotacaoId}
                               </p>
                               <p className="text-[11px] text-slate-500">
                                 {pedido.emailCliente}
@@ -480,6 +601,7 @@ export function OrdersPage() {
                           <RowMenu
                             pedido={pedido}
                             onDelete={(id) => deleteMutation.mutate(id)}
+                            onView={(p) => setSelectedPedido(p)}
                           />
                         </td>
                       </motion.tr>
@@ -498,6 +620,14 @@ export function OrdersPage() {
           />
         </div>
       </div>
+      <AnimatePresence>
+        {selectedPedido && (
+          <OrderDetailsModal
+            pedido={selectedPedido}
+            onClose={() => setSelectedPedido(null)}
+          />
+        )}
+      </AnimatePresence>
       <ToastContainer toasts={toasts} />
     </AdminLayout>
   );

@@ -107,11 +107,6 @@ const formatDate = (iso: string) =>
     year: 'numeric',
   });
 
-const getAvatar = (empresa: Empresa) =>
-  empresa.logoEmpresa
-    ? `${import.meta.env.VITE_API_URL}images/logos/${empresa.logoEmpresa}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(empresa.nomeEmpresa)}&background=f97316&color=fff&size=64`;
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 interface Toast {
@@ -238,15 +233,6 @@ const RowMenu = ({
           },
         ]
       : []),
-    {
-      label: 'Excluir empresa',
-      icon: 'delete',
-      color: 'text-red-600',
-      onClick: () => {
-        onDelete(empresa.empresaId);
-        setOpen(false);
-      },
-    },
   ];
 
   return (
@@ -304,7 +290,7 @@ const NewEmpresaModal = ({
 
   const mutation = useMutation({
     mutationFn: async (data: NewEmpresaForm) => {
-      const res = await api.post('https://jagas.devgrc.com/v1/empresas', data);
+      const res = await api.post('/empresas', data);
       return res.data;
     },
     onSuccess: () => {
@@ -581,7 +567,7 @@ export function SellerPage() {
   const { data: response, isLoading } = useQuery<EmpresasResponse>({
     queryKey: ['empresas'],
     queryFn: async () => {
-      const res = await api.get('https://jagas.devgrc.com/v1/empresas');
+      const res = await api.get('/empresas');
       return res.data;
     },
     staleTime: 1000 * 60 * 2,
@@ -627,7 +613,7 @@ export function SellerPage() {
       id: number;
       bloqueio: '0' | '1';
     }) => {
-      await api.patch(`https://jagas.devgrc.com/v1/empresas/${id}`, {
+      await api.patch(`/empresas/${id}`, {
         bloqueioEmpresa: bloqueio,
       });
     },
@@ -642,7 +628,7 @@ export function SellerPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`https://jagas.devgrc.com/v1/empresas/${id}`);
+      await api.delete(`/empresas/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['empresas'] });
@@ -850,11 +836,6 @@ export function SellerPage() {
                           {/* Empresa */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={getAvatar(empresa)}
-                                alt={empresa.nomeEmpresa}
-                                className="size-10 rounded-full object-cover flex-shrink-0 bg-slate-100"
-                              />
                               <div>
                                 <p className="text-sm font-bold text-slate-900">
                                   {empresa.nomeEmpresa}

@@ -1,10 +1,10 @@
-import { useAuthStore } from '@/hooks/adminStore';
+import { useAdminAuthStore } from '@/hooks/adminStore';
 import { Navigate } from 'react-router-dom';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const token = useAdminAuthStore((state) => state.session.token);
 
-  if (!isAuthenticated) {
+  if (!token) {
     return <Navigate to="/" replace />;
   }
 

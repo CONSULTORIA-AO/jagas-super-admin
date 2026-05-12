@@ -103,11 +103,6 @@ const fmtDate = (iso: string) =>
 const fmtShort = (iso: string) =>
   new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 
-const getAvatar = (nome: string, foto?: string | null, folder = 'clients') =>
-  foto && foto !== '0'
-    ? `${import.meta.env.VITE_API_URL}images/${folder}/${foto}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=f97316&color=fff&size=64`;
-
 const Icon = ({
   name,
   className = '',
@@ -301,35 +296,35 @@ export function AdminDashboard() {
   const { data: pedidosRes, isLoading: loadPedidos } = useQuery({
     queryKey: ['dash-pedidos'],
     queryFn: async () =>
-      (await api.get('https://jagas.devgrc.com/v1/pedidos')).data,
+      (await api.get('/pedidos')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: clientesRes, isLoading: loadClientes } = useQuery({
     queryKey: ['dash-clientes'],
     queryFn: async () =>
-      (await api.get('https://jagas.devgrc.com/v1/clientes')).data,
+      (await api.get('/clientes')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: empresasRes, isLoading: loadEmpresas } = useQuery({
     queryKey: ['dash-empresas'],
     queryFn: async () =>
-      (await api.get('https://jagas.devgrc.com/v1/empresas')).data,
+      (await api.get('/empresas')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: produtosRes, isLoading: loadProdutos } = useQuery({
     queryKey: ['dash-produtos'],
     queryFn: async () =>
-      (await api.get('https://jagas.devgrc.com/v1/produtos')).data,
+      (await api.get('/produtos')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: categoriasRes } = useQuery({
     queryKey: ['dash-categorias'],
     queryFn: async () =>
-      (await api.get('https://jagas.devgrc.com/v1/categorias')).data,
+      (await api.get('/categorias')).data,
     staleTime: 1000 * 60 * 10,
   });
 
@@ -911,14 +906,6 @@ export function AdminDashboard() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <img
-                                    src={getAvatar(
-                                      p.nomeCliente,
-                                      p.fotoCliente
-                                    )}
-                                    alt={p.nomeCliente}
-                                    className="size-8 rounded-full object-cover bg-slate-100 flex-shrink-0"
-                                  />
                                   <div>
                                     <p className="text-sm font-bold text-slate-800 leading-tight">
                                       {p.nomeCliente}
@@ -1027,14 +1014,6 @@ export function AdminDashboard() {
                               >
                                 <td className="px-6 py-4">
                                   <div className="flex items-center gap-3">
-                                    <img
-                                      src={getAvatar(
-                                        c.nomeCliente,
-                                        c.fotoCliente
-                                      )}
-                                      alt={c.nomeCliente}
-                                      className="size-8 rounded-full object-cover bg-slate-100 flex-shrink-0"
-                                    />
                                     <div>
                                       <p className="text-sm font-bold text-slate-800">
                                         {c.nomeCliente}
@@ -1123,17 +1102,6 @@ export function AdminDashboard() {
                             >
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <img
-                                    src={getAvatar(
-                                      p.descricao,
-                                      p.imagem_produto !== '0'
-                                        ? p.imagem_produto
-                                        : null,
-                                      'products'
-                                    )}
-                                    alt={p.descricao}
-                                    className="size-8 rounded-lg object-cover bg-slate-100 flex-shrink-0"
-                                  />
                                   <p className="text-sm font-bold text-slate-800">
                                     {p.descricao}
                                   </p>
@@ -1188,11 +1156,6 @@ export function AdminDashboard() {
                     <span className="text-[11px] font-black text-slate-300 w-4">
                       {i + 1}
                     </span>
-                    <img
-                      src={getAvatar(e.nomeEmpresa, e.logoEmpresa, 'logos')}
-                      alt={e.nomeEmpresa}
-                      className="size-8 rounded-full object-cover bg-slate-100 flex-shrink-0"
-                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-800 truncate">
                         {e.nomeEmpresa}

@@ -181,7 +181,7 @@ export function CategoriesPage() {
 
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) =>
-      await api.post(`/categorias/${id}`, { ativo_cat: status }),
+      await api.patch(`/categorias/${id}`, { ativo_cat: status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorias-admin'] });
       showToast('Status atualizado com sucesso!');

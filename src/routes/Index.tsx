@@ -1,9 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
+
 import { AdminLogin } from '@/app/(public)/auth/login/page';
 import { AdminRegister } from '@/app/(public)/auth/signup/page';
-import { AdminForgotPassword } from '@/app/(public)/auth/recoverpassword/page';
 import NotFoundPage from '@/app/(public)/notfound/page';
+
 import { AdminDashboard } from '@/app/dashboard/page';
 import { AdminProfile } from '@/app/profile/page';
 import { ProductsPage } from '@/app/products/page';
@@ -20,26 +21,71 @@ export function AppRoutes() {
 
       <Route path="/cadastrar-admin" element={<AdminRegister />} />
 
-      {/*<Route path="/recuperar-senha" element={<AdminForgotPassword />} />*/}
-
-      <Route path="/dashboard" element={<AdminDashboard />} />
-
-      {/*<Route path="/perfil" element={<AdminProfile />} />*/}
-
-      <Route path="/vendedores" element={<SellerPage />} />
-
-      <Route path="/clientes" element={<ClientsPage />} />
-
-      <Route path="/produtos" element={<ProductsPage />} />
-
-      <Route path="/pedidos" element={<OrdersPage />} />
-
-      <Route path="/categoria" element={<CategoriesPage />} />
-
-      <Route path="/perfil" element={<AdminProfile />} />
-
       {/* Rotas Privadas */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
+      <Route
+        path="/vendedores"
+        element={
+          <ProtectedRoute>
+            <SellerPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/clientes"
+        element={
+          <ProtectedRoute>
+            <ClientsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/produtos"
+        element={
+          <ProtectedRoute>
+            <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/pedidos"
+        element={
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/categoria"
+        element={
+          <ProtectedRoute>
+            <CategoriesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/perfil"
+        element={
+          <ProtectedRoute>
+            <AdminProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

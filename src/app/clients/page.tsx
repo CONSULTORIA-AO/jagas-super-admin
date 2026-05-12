@@ -212,15 +212,6 @@ const RowMenu = ({
             },
           },
         ]),
-    {
-      label: 'Excluir cliente',
-      icon: 'delete',
-      color: 'text-red-600',
-      onClick: () => {
-        onDelete(cliente.clienteId);
-        setOpen(false);
-      },
-    },
   ];
 
   return (
@@ -619,11 +610,6 @@ export function ClientsPage() {
                           {/* Cliente */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={getAvatar(cliente)}
-                                alt={cliente.nomeCliente}
-                                className="size-10 rounded-full object-cover flex-shrink-0 bg-slate-100"
-                              />
                               <div>
                                 <p className="text-sm font-bold text-slate-900">
                                   {cliente.nomeCliente}

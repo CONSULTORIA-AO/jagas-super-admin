@@ -82,11 +82,6 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   });
 
-const getAvatar = (p: Produto) =>
-  p.imagem_produto && p.imagem_produto !== '0'
-    ? `${import.meta.env.VITE_API_URL}images/products/${p.imagem_produto}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.descricao)}&background=f97316&color=fff&size=64`;
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 interface Toast {
@@ -198,15 +193,6 @@ const RowMenu = ({
       color: isAtivo ? 'text-slate-600' : 'text-emerald-600',
       onClick: () => {
         onToggleStatus(produto.produtoId, isAtivo ? '0' : '1');
-        setOpen(false);
-      },
-    },
-    {
-      label: 'Excluir produto',
-      icon: 'delete',
-      color: 'text-red-600',
-      onClick: () => {
-        onDelete(produto.produtoId);
         setOpen(false);
       },
     },
@@ -598,11 +584,6 @@ export function ProductsPage() {
                           {/* Produto */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={getAvatar(produto)}
-                                alt={produto.descricao}
-                                className="size-10 rounded-lg object-cover flex-shrink-0 bg-slate-100"
-                              />
                               <p className="text-sm font-bold text-slate-900 max-w-[160px] truncate">
                                 {produto.descricao}
                               </p>
@@ -665,29 +646,6 @@ export function ProductsPage() {
             pageSize={PAGE_SIZE}
             onPage={setPage}
           />
-        </motion.div>
-
-        {/* Admin Tip */}
-        <motion.div
-          className="mt-8 p-6 bg-orange-500/5 rounded-xl border border-orange-500/15 flex gap-4 items-start"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Icon
-            name="info"
-            className="text-orange-500 text-[24px] flex-shrink-0 mt-0.5"
-          />
-          <div>
-            <h4 className="text-orange-600 font-bold text-sm mb-1">
-              Dica de Administrador
-            </h4>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Produtos inactivos ficam invisíveis para os compradores mas mantêm
-              o histórico de vendas. Usa a opção de activar/desactivar no menu
-              de acções para controlar a visibilidade sem apagar o produto.
-            </p>
-          </div>
         </motion.div>
       </div>
 
