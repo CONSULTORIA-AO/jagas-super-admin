@@ -689,13 +689,6 @@ export default function SellerPage() {
               Administre as empresas vendedoras registadas na plataforma.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-5 h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-200 transition-all"
-          >
-            <Icon name="add" className="text-[18px]" /> Nova Empresa
-          </button>
         </motion.div>
 
         {/* Stats */}
