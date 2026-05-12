@@ -146,10 +146,11 @@ const Pagination = ({ page, totalPages, total, pageSize, onPage }: any) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function CategoriesPage() {
+export default function CategoriesPage() {
   const queryClient = useQueryClient();
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
+  const [inputSearch, setInputSearch] = useState(''); // Estado para o campo de texto
   const PAGE_SIZE = 10;
 
   const [search, setSearch] = useState('');
@@ -198,6 +199,11 @@ export function CategoriesPage() {
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleSearch = () => {
+    setSearch(inputSearch);
+    setPage(1);
+  };
 
   const stats = [
     {
@@ -267,19 +273,27 @@ export function CategoriesPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 p-4">
-          <div className="relative max-w-md">
+        <div className="bg-white rounded-xl border flex space-x-4 border-slate-200 shadow-sm mb-6 p-4">
+          <div className="relative flex-1">
             <Icon
               name="search"
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               className="w-full pl-12 pr-4 h-12 bg-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
-              placeholder="Buscar categoria..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar categoria por nome ou descrição..."
+              value={inputSearch}
+              onChange={(e) => setInputSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
+          <button
+            onClick={handleSearch}
+            className="px-6 h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition-all flex items-center gap-2 shadow-md shadow-orange-600/10"
+          >
+            <Icon name="search" />
+            <span>Pesquisar</span>
+          </button>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

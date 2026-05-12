@@ -369,7 +369,7 @@ const OrderDetailsModal = ({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function OrdersPage() {
+export default function OrdersPage() {
   const queryClient = useQueryClient();
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const { toasts, show: showToast } = useToast();
@@ -379,13 +379,10 @@ export function OrdersPage() {
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
   const [inputSearch, setInputSearch] = useState('');
 
-  useEffect(() => {
-    const t = setTimeout(
-      () => setFilters((f) => ({ ...f, search: inputSearch })),
-      350
-    );
-    return () => clearTimeout(t);
-  }, [inputSearch]);
+  const handleSearch = () => {
+    setFilters((f) => ({ ...f, search: inputSearch }));
+    setPage(1); // Reseta para a primeira página ao buscar
+  };
 
   const { data: response, isLoading } = useQuery<PedidosResponse>({
     queryKey: ['pedidos-admin'],
@@ -399,11 +396,17 @@ export function OrdersPage() {
 
   const filtered = allPedidos.filter((p) => {
     const q = filters.search.toLowerCase();
+
+    // Usamos (p.campo || '') para garantir que sempre teremos uma string,
+    // mesmo que o banco retorne null ou undefined
+    const nomeCliente = (p.nomeCliente || '').toLowerCase();
+    const numeroCotacao = (p.numero_cotacao || '').toLowerCase();
+
     const matchSearch =
-      !q ||
-      p.nomeCliente.toLowerCase().includes(q) ||
-      p.numero_cotacao.toLowerCase().includes(q);
+      !q || nomeCliente.includes(q) || numeroCotacao.includes(q);
+
     const matchStatus = !filters.status || p.statusPedido === filters.status;
+
     return matchSearch && matchStatus;
   });
 
@@ -498,8 +501,16 @@ export function OrdersPage() {
               placeholder="Buscar por cliente ou Nº cotação..."
               value={inputSearch}
               onChange={(e) => setInputSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
+          <button
+            onClick={handleSearch}
+            className="px-6 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
+          >
+            <Icon name="search" className="text-white text-lg" />
+            <span>Pesquisar</span>
+          </button>
           <select
             className="w-44 h-12 bg-slate-100 rounded-lg px-3 font-medium text-slate-700 outline-none"
             value={filters.status}

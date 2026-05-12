@@ -331,7 +331,7 @@ const Pagination = ({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function ClientsPage() {
+export default function ClientsPage() {
   const queryClient = useQueryClient();
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
@@ -339,14 +339,6 @@ export function ClientsPage() {
 
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
   const [inputSearch, setInputSearch] = useState('');
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: inputSearch }));
-      setPage(1);
-    }, 350);
-    return () => clearTimeout(t);
-  }, [inputSearch]);
 
   // ── Fetch clientes ──────────────────────────────────────────────────────────
   const { data: response, isLoading } = useQuery<ClientesResponse>({
@@ -407,6 +399,11 @@ export function ClientsPage() {
     },
     onError: () => showToast('Erro ao atualizar status.', 'error'),
   });
+
+  const handleSearch = () => {
+    setFilters((f) => ({ ...f, search: inputSearch }));
+    setPage(1); // Reseta para a primeira página ao buscar
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -505,12 +502,20 @@ export function ClientsPage() {
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"
               />
               <input
-                className="w-full pl-12 pr-4 h-12 bg-slate-100 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
-                placeholder="Buscar por nome, e-mail, telefone ou endereço..."
+                className="w-full pl-12 pr-4 h-12 bg-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
+                placeholder="Buscar categoria por nome ou descrição..."
                 value={inputSearch}
                 onChange={(e) => setInputSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </div>
+            <button
+              onClick={handleSearch}
+              className="px-6 h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition-all flex items-center gap-2 shadow-md shadow-orange-600/10"
+            >
+              <Icon name="search" />
+              <span>Pesquisar</span>
+            </button>
             <select
               className="w-44 h-12 bg-slate-100 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 px-3 font-medium text-slate-700"
               value={filters.status}

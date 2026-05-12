@@ -315,22 +315,20 @@ const Pagination = ({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function ProductsPage() {
+export default function ProductsPage() {
   const queryClient = useQueryClient();
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
+
   const PAGE_SIZE = 8;
 
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
   const [inputSearch, setInputSearch] = useState('');
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: inputSearch }));
-      setPage(1);
-    }, 350);
-    return () => clearTimeout(t);
-  }, [inputSearch]);
+  const handleSearch = () => {
+    setFilters((f) => ({ ...f, search: inputSearch }));
+    setPage(1); // Reseta para a primeira página ao buscar
+  };
 
   // ── Fetch produtos ──────────────────────────────────────────────────────────
   const { data: response, isLoading } = useQuery<ProdutosResponse>({
@@ -346,13 +344,22 @@ export function ProductsPage() {
 
   // Filtragem local
   const filtered = allProdutos.filter((p) => {
+    // Convertemos a busca para minúsculas uma única vez
     const q = filters.search.toLowerCase();
+
+    // Se não houver busca, retorna tudo (curto-circuito para performance)
+    if (!q && !filters.status) return true;
+
+    // Blindagem contra campos null/undefined vindo da API
+    const descricao = (p.descricao || '').toLowerCase();
+    const unidade = (p.unidadeMedida || '').toLowerCase();
+    const preco = String(p.preco || 0); // Garante que preço nulo vire '0'
+
     const matchSearch =
-      !q ||
-      p.descricao.toLowerCase().includes(q) ||
-      p.unidadeMedida.toLowerCase().includes(q) ||
-      String(p.preco).includes(q);
+      !q || descricao.includes(q) || unidade.includes(q) || preco.includes(q);
+
     const matchStatus = !filters.status || getStatus(p) === filters.status;
+
     return matchSearch && matchStatus;
   });
 
@@ -479,12 +486,20 @@ export function ProductsPage() {
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"
               />
               <input
-                className="w-full pl-12 pr-4 h-12 bg-slate-100 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
-                placeholder="Buscar por descrição ou unidade..."
+                className="w-full pl-12 pr-4 h-12 bg-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
+                placeholder="Buscar categoria por nome ou descrição..."
                 value={inputSearch}
                 onChange={(e) => setInputSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </div>
+            <button
+              onClick={handleSearch}
+              className="px-6 h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition-all flex items-center gap-2 shadow-md shadow-orange-600/10"
+            >
+              <Icon name="search" />
+              <span>Pesquisar</span>
+            </button>
             <select
               className="w-44 h-12 bg-slate-100 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 px-3 font-medium text-slate-700"
               value={filters.status}

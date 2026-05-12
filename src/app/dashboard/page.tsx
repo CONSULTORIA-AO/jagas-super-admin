@@ -282,7 +282,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-export function AdminDashboard() {
+export default function AdminDashboard() {
   const [pedidoSearch, setPedidoSearch] = useState('');
   const [pedidoStatus, setPedidoStatus] = useState('');
   const [pedidoPage, setPedidoPage] = useState(1);
@@ -798,21 +798,6 @@ export function AdminDashboard() {
               >
                 {/* Search + filter */}
                 <div className="p-4 border-b border-slate-50 flex flex-wrap gap-3">
-                  <div className="relative flex-1 min-w-[200px]">
-                    <Icon
-                      name="search"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]"
-                    />
-                    <input
-                      value={pedidoSearch}
-                      onChange={(e) => {
-                        setPedidoSearch(e.target.value);
-                        setPedidoPage(1);
-                      }}
-                      placeholder="Buscar cliente ou cotação..."
-                      className="w-full pl-10 pr-4 h-10 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all"
-                    />
-                  </div>
                   <select
                     value={pedidoStatus}
                     onChange={(e) => {

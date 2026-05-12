@@ -5,13 +5,13 @@ import { AdminLogin } from '@/app/(public)/auth/login/page';
 import { AdminRegister } from '@/app/(public)/auth/signup/page';
 import NotFoundPage from '@/app/(public)/notfound/page';
 
-import { AdminDashboard } from '@/app/dashboard/page';
+import AdminDashboard from '@/app/dashboard/page';
 import { AdminProfile } from '@/app/profile/page';
-import { ProductsPage } from '@/app/products/page';
-import { SellerPage } from '@/app/management/page';
-import { ClientsPage } from '@/app/clients/page';
-import { OrdersPage } from '@/app/order/page';
-import { CategoriesPage } from '@/app/category/page';
+import ProductsPage from '@/app/products/page';
+import SellerPage from '@/app/management/page';
+import ClientsPage from '@/app/clients/page';
+import OrdersPage from '@/app/order/page';
+import CategoriesPage from '@/app/category/page';
 
 export function AppRoutes() {
   return (
