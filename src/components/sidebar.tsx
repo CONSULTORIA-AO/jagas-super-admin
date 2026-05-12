@@ -125,13 +125,26 @@ export function AdminSidebar() {
             })}
           </nav>
         </div>
-        <button
-          onClick={() => handleLogout()}
-          className="flex items-center gap-3 w-full p-4 rounded-2xl text-neutral-text hover:bg-primary/5 hover:text-primary transition-all font-black text-xs uppercase tracking-widest group"
-        >
-          <MdLogout className="text-xl group-hover:translate-x-1 transition-transform" />
-          <span>Sair</span>
-        </button>
+        <div className="p-3 border-t border-orange-100/60">
+          <button
+            onClick={handleLogout}
+            title={collapsed ? 'Sair' : undefined}
+            className={`
+      flex items-center w-full rounded-2xl
+      text-slate-500 hover:bg-orange-50 hover:text-orange-600
+      transition-all duration-300 group
+      ${collapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}
+    `}
+          >
+            <MdLogout className="text-xl flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+
+            {!collapsed && (
+              <span className="text-xs font-black uppercase tracking-widest truncate">
+                Sair
+              </span>
+            )}
+          </button>
+        </div>
       </aside>
 
       {/* Mobile toggle button (outside sidebar) */}

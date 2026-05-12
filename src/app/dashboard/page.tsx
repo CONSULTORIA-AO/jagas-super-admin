@@ -295,36 +295,31 @@ export function AdminDashboard() {
   // ── Queries ──────────────────────────────────────────────────────────────────
   const { data: pedidosRes, isLoading: loadPedidos } = useQuery({
     queryKey: ['dash-pedidos'],
-    queryFn: async () =>
-      (await api.get('/pedidos')).data,
+    queryFn: async () => (await api.get('/pedidos')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: clientesRes, isLoading: loadClientes } = useQuery({
     queryKey: ['dash-clientes'],
-    queryFn: async () =>
-      (await api.get('/clientes')).data,
+    queryFn: async () => (await api.get('/clientes')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: empresasRes, isLoading: loadEmpresas } = useQuery({
     queryKey: ['dash-empresas'],
-    queryFn: async () =>
-      (await api.get('/empresas')).data,
+    queryFn: async () => (await api.get('/empresas')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: produtosRes, isLoading: loadProdutos } = useQuery({
     queryKey: ['dash-produtos'],
-    queryFn: async () =>
-      (await api.get('/produtos')).data,
+    queryFn: async () => (await api.get('/produtos')).data,
     staleTime: 1000 * 60,
   });
 
   const { data: categoriasRes } = useQuery({
     queryKey: ['dash-categorias'],
-    queryFn: async () =>
-      (await api.get('/categorias')).data,
+    queryFn: async () => (await api.get('/categorias')).data,
     staleTime: 1000 * 60 * 10,
   });
 
