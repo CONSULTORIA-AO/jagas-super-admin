@@ -29,7 +29,7 @@ export function AdminSidebar() {
         className={`
           flex-shrink-0 border-r border-orange-100/60 bg-white h-full flex flex-col justify-between
           shadow-sm transition-all duration-300 z-30
-          ${collapsed ? 'w-16' : 'w-64'}
+          ${collapsed ? 'w-16' : 'w-56'}
           fixed lg:relative
           ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
         `}
@@ -83,47 +83,46 @@ export function AdminSidebar() {
 
           {/* Nav */}
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative
                   ${
                     isActive
                       ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
                       : 'text-slate-500 hover:bg-orange-50 hover:text-orange-600'
                   }
                   ${collapsed ? 'justify-center' : ''}`
-                }
-                title={collapsed ? item.label : undefined}
-              >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`material-symbols-outlined text-[20px] flex-shrink-0 ${isActive ? '[font-variation-settings:"FILL"_1]' : ''}`}
-                    >
-                      {item.icon}
-                    </span>
-                    {!collapsed && (
-                      <span className="text-sm font-semibold truncate">
-                        {item.label}
-                      </span>
-                    )}
-                    {!collapsed && item.badge && (
-                      <span
-                        className={`ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-orange-100 text-orange-600'}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                    {collapsed && item.badge && (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
+                  }
+                  title={collapsed ? item.label : undefined}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon className="text-[20px] flex-shrink-0" />
+                      {!collapsed && (
+                        <span className="text-sm font-semibold truncate">
+                          {item.label}
+                        </span>
+                      )}
+                      {!collapsed && item.badge && (
+                        <span
+                          className={`ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-orange-100 text-orange-600'}`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                      {collapsed && item.badge && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
           </nav>
         </div>
         <button
@@ -131,7 +130,7 @@ export function AdminSidebar() {
           className="flex items-center gap-3 w-full p-4 rounded-2xl text-neutral-text hover:bg-primary/5 hover:text-primary transition-all font-black text-xs uppercase tracking-widest group"
         >
           <MdLogout className="text-xl group-hover:translate-x-1 transition-transform" />
-          <span>Sair da Conta</span>
+          <span>Sair</span>
         </button>
       </aside>
 

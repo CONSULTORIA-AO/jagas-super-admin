@@ -5,6 +5,7 @@ import { TbUsersGroup } from 'react-icons/tb';
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { ImProfile } from 'react-icons/im';
 import { FaUserTie } from 'react-icons/fa6';
+import { GoGraph } from 'react-icons/go';
 
 export type OrderStatus = 'Pendente' | 'Aprovado' | 'Rejeitado' | 'Cancelado';
 
@@ -31,7 +32,7 @@ export const STATUS_MAP: Record<
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { icon: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+  { icon: GoGraph, label: 'Dashboard', path: '/dashboard' },
   { icon: MdOutlineBorderColor, label: 'Pedidos', path: '/pedidos' },
   { icon: BiCategory, label: 'Categoria', path: '/categoria' },
   { icon: TbUsersGroup, label: 'Clientes', path: '/clientes' },
