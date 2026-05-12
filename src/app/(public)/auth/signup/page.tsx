@@ -378,7 +378,6 @@ export function AdminRegister() {
         <p className="text-gray-400 text-xs">
           © {new Date().getFullYear()} JaGás — Todos os direitos reservados.
         </p>
-        <p className="text-gray-300 text-xs mt-1">Versão 1.0.0</p>
       </footer>
     </div>
   );
