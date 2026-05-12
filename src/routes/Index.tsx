@@ -20,7 +20,7 @@ export function AppRoutes() {
 
       <Route path="/cadastrar-admin" element={<AdminRegister />} />
 
-      <Route path="/recuperar-senha" element={<AdminForgotPassword />} />
+      {/*<Route path="/recuperar-senha" element={<AdminForgotPassword />} />*/}
 
       <Route path="/dashboard" element={<AdminDashboard />} />
 
@@ -35,6 +35,8 @@ export function AppRoutes() {
       <Route path="/pedidos" element={<OrdersPage />} />
 
       <Route path="/categoria" element={<CategoriesPage />} />
+
+      <Route path="/perfil" element={<AdminProfile />} />
 
       {/* Rotas Privadas */}
 

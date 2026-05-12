@@ -2,10 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface AdminUser {
-  id: number;
-  nome: string;
-  email: string;
-  perfil: string;
+  hash: string;
+  ultimo_login?: string;
 }
 
 interface AdminSession {

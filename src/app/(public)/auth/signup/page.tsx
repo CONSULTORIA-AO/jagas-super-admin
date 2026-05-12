@@ -6,8 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/utils/api';
 import { EyeIcon } from '@/components/EyeIcon';
-import axios from 'axios';
-
+import { AxiosError } from 'axios';
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const registerSchema = z
@@ -53,19 +52,26 @@ export function AdminRegister() {
   } = useMutation({
     mutationFn: async (data: RegisterForm) => {
       try {
-        const res = await api.post('/administradores', {
-          email_: data.email_,
-          senha_: data.senha_,
-          confirmar_senha: data.confirmar_senha,
-          nome_usuario: data.nome_usuario,
-          tipo_usuario: data.tipo_usuario,
-          gerador: 'web',
-        });
-        console.log('SUCCESS:', res.data);
+        const res = await api.post(
+          '/administradores',
+          {
+            email_: data.email_,
+            senha_: data.senha_,
+            confirmar_senha: data.confirmar_senha,
+            nome_usuario: data.nome_usuario,
+            tipo_usuario: data.tipo_usuario,
+          },
+          {
+            headers: {
+              gerador: 1,
+            },
+          }
+        );
         return res.data;
-      } catch (err: any) {
-        console.log('STATUS:', err.response?.status);
-        console.log('DATA:', err.response?.data);
+      } catch (err: unknown) {
+        if (err instanceof AxiosError) {
+          throw err;
+        }
         throw err;
       }
     },
@@ -91,21 +97,6 @@ export function AdminRegister() {
               <div className="px-8 py-12 flex flex-col items-center text-center gap-5">
                 <div className="relative inline-flex">
                   <div className="absolute w-20 h-20 rounded-full bg-green-100 animate-ping opacity-20" />
-                  <div className="relative w-16 h-16 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-green-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
                 </div>
                 <div>
                   <h2 className="text-gray-900 text-xl font-bold">
@@ -128,21 +119,6 @@ export function AdminRegister() {
             <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden">
               {/* Card header */}
               <div className="px-8 pt-10 pb-7 text-center border-b border-gray-50">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 mb-5">
-                  <svg
-                    className="w-7 h-7 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                    />
-                  </svg>
-                </div>
                 <h1 className="text-gray-900 text-[22px] font-bold tracking-tight">
                   Criar Conta Admin
                 </h1>
