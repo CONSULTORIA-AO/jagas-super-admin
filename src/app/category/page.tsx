@@ -386,6 +386,251 @@ const CategoriaDetailsModal = ({
   );
 };
 
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+
+const EditCategoriaModal = ({
+  categoria,
+  onClose,
+  onSuccess,
+}: {
+  categoria: Categoria;
+  onClose: () => void;
+  onSuccess: () => void;
+}) => {
+  const [form, setForm] = useState({
+    nome_cat: categoria.nome_cat,
+    descricao_cat: categoria.descricao_cat,
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async (payload: typeof form) =>
+      await api.patch(`/categorias/${categoria.categoria_id}`, payload),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Icon name="edit" className="text-amber-600 text-lg" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 leading-tight">
+                Editar Categoria
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
+                ID #{categoria.categoria_id}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">
+              Nome da Categoria
+            </label>
+            <input
+              className="w-full px-4 py-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+              placeholder="Ex: Eletrônicos"
+              value={form.nome_cat}
+              onChange={(e) => setForm({ ...form, nome_cat: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">
+              Descrição
+            </label>
+            <textarea
+              className="w-full px-4 py-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20 h-24 resize-none transition-all"
+              placeholder="Breve descrição..."
+              value={form.descricao_cat}
+              onChange={(e) =>
+                setForm({ ...form, descricao_cat: e.target.value })
+              }
+            />
+          </div>
+
+          {editMutation.isError && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+              <Icon name="error" className="text-red-500 text-base flex-shrink-0" />
+              <p className="text-sm text-red-600 font-medium">
+                Erro ao actualizar categoria. Tente novamente.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={editMutation.isPending || !form.nome_cat.trim()}
+              onClick={() => editMutation.mutate(form)}
+              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {editMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  A guardar...
+                </>
+              ) : (
+                <>
+                  <Icon name="save" className="text-base" />
+                  Guardar Alterações
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// ─── Delete Confirmation Modal ────────────────────────────────────────────────
+
+const DeleteCategoriaModal = ({
+  categoria,
+  onClose,
+  onSuccess,
+}: {
+  categoria: Categoria;
+  onClose: () => void;
+  onSuccess: () => void;
+}) => {
+  const deleteMutation = useMutation({
+    mutationFn: async () =>
+      await api.delete(`/categorias/${categoria.categoria_id}`),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top accent bar */}
+        <div className="h-1 bg-red-500 w-full" />
+
+        <div className="p-6">
+          {/* Icon + title */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <Icon name="delete_forever" className="text-red-500 text-3xl" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900">
+              Eliminar Categoria
+            </h3>
+            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+              Tem a certeza que deseja eliminar a categoria{' '}
+              <span className="font-bold text-slate-700">
+                "{categoria.nome_cat}"
+              </span>
+              ? Esta acção é irreversível.
+            </p>
+          </div>
+
+          {/* Category info chip */}
+          <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-6">
+            <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+              <Icon name="category" className="text-slate-500 text-base" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-800 truncate">
+                {categoria.nome_cat}
+              </p>
+              <p className="text-xs text-slate-400 font-mono">
+                ID #{categoria.categoria_id}
+              </p>
+            </div>
+          </div>
+
+          {deleteMutation.isError && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl mb-4">
+              <Icon name="error" className="text-red-500 text-base flex-shrink-0" />
+              <p className="text-sm text-red-600 font-medium">
+                Erro ao eliminar. Tente novamente.
+              </p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={deleteMutation.isPending}
+              className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-600/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  A eliminar...
+                </>
+              ) : (
+                <>
+                  <Icon name="delete" className="text-base" />
+                  Eliminar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CategoriesPage() {
@@ -395,9 +640,9 @@ export default function CategoriesPage() {
   const [inputSearch, setInputSearch] = useState('');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(
-    null
-  );
+  const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(null);
+  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
+  const [deletingCategoria, setDeletingCategoria] = useState<Categoria | null>(null);
   const [newCat, setNewCat] = useState({ nome_cat: '', descricao_cat: '' });
   const PAGE_SIZE = 10;
 
@@ -611,6 +856,7 @@ export default function CategoriesPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Ver detalhes */}
                           <button
                             onClick={() =>
                               setSelectedCategoriaId(cat.categoria_id)
@@ -620,6 +866,17 @@ export default function CategoriesPage() {
                           >
                             <Icon name="visibility" />
                           </button>
+
+                          {/* Editar */}
+                          <button
+                            onClick={() => setEditingCategoria(cat)}
+                            className="p-2 rounded-lg hover:bg-amber-50 text-amber-500 transition-colors"
+                            title="Editar Categoria"
+                          >
+                            <Icon name="edit" />
+                          </button>
+
+                          {/* Ativar / Desativar */}
                           <button
                             onClick={() =>
                               toggleStatusMutation.mutate({
@@ -637,6 +894,15 @@ export default function CategoriesPage() {
                                 cat.ativo_cat === '1' ? 'block' : 'check_circle'
                               }
                             />
+                          </button>
+
+                          {/* Eliminar */}
+                          <button
+                            onClick={() => setDeletingCategoria(cat)}
+                            className="p-2 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                            title="Eliminar Categoria"
+                          >
+                            <Icon name="delete" />
                           </button>
                         </div>
                       </td>
@@ -732,6 +998,37 @@ export default function CategoriesPage() {
           <CategoriaDetailsModal
             categoriaId={selectedCategoriaId}
             onClose={() => setSelectedCategoriaId(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal Editar ── */}
+      <AnimatePresence>
+        {editingCategoria !== null && (
+          <EditCategoriaModal
+            categoria={editingCategoria}
+            onClose={() => setEditingCategoria(null)}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['categorias-admin'] });
+              queryClient.invalidateQueries({
+                queryKey: ['categoria-detalhe', editingCategoria.categoria_id],
+              });
+              showToast('Categoria actualizada com sucesso!');
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal Eliminar ── */}
+      <AnimatePresence>
+        {deletingCategoria !== null && (
+          <DeleteCategoriaModal
+            categoria={deletingCategoria}
+            onClose={() => setDeletingCategoria(null)}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['categorias-admin'] });
+              showToast('Categoria eliminada com sucesso!');
+            }}
           />
         )}
       </AnimatePresence>
