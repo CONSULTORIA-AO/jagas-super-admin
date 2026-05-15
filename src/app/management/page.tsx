@@ -31,6 +31,14 @@ interface Empresa {
   id_confEmpresa: number;
   empresaIdConf: number;
   codigo_confirmacao: string;
+  // campos extras retornados pelo endpoint /empresas/:id
+  tentativas_login?: number;
+  codigo_seguranca?: string;
+  tempo_de_vida_codigo_seguranca?: string;
+  servico_mensagens?: string;
+  servico_email?: string;
+  servico_principal?: string;
+  endereco_mac_unico_empresa?: string | null;
 }
 
 interface EmpresasResponse {
@@ -84,7 +92,6 @@ const Icon = ({
   </span>
 );
 
-// Deriva status a partir de bloqueioEmpresa
 const getStatus = (empresa: Empresa): EmpresaStatus => {
   if (empresa.bloqueioEmpresa === '1') return 'bloqueado';
   if (empresa.nova_empresa === '1') return 'inativo';
@@ -93,19 +100,65 @@ const getStatus = (empresa: Empresa): EmpresaStatus => {
 
 const statusConfig: Record<
   EmpresaStatus,
-  { dot: string; text: string; label: string }
+  { dot: string; text: string; label: string; bg: string }
 > = {
-  ativo: { dot: 'bg-emerald-500', text: 'text-emerald-600', label: 'Ativo' },
-  inativo: { dot: 'bg-slate-400', text: 'text-slate-500', label: 'Inativo' },
-  bloqueado: { dot: 'bg-red-500', text: 'text-red-600', label: 'Bloqueado' },
+  ativo: {
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-700',
+    label: 'Ativo',
+    bg: 'bg-emerald-50 border-emerald-200',
+  },
+  inativo: {
+    dot: 'bg-slate-400',
+    text: 'text-slate-600',
+    label: 'Inativo',
+    bg: 'bg-slate-50 border-slate-200',
+  },
+  bloqueado: {
+    dot: 'bg-red-500',
+    text: 'text-red-700',
+    label: 'Bloqueado',
+    bg: 'bg-red-50 border-red-200',
+  },
 };
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('pt-BR', {
+const formatDate = (iso?: string) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
+};
+
+const formatDateTime = (iso?: string) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const boolLabel = (val?: string) => {
+  if (val === 'true' || val === '1')
+    return {
+      label: 'Activo',
+      color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    };
+  if (val === 'false' || val === '0')
+    return {
+      label: 'Inactivo',
+      color: 'text-slate-600 bg-slate-50 border-slate-200',
+    };
+  return { label: '—', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+};
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -183,16 +236,308 @@ const StatCard = ({
   </motion.div>
 );
 
+// ─── Info Row ─────────────────────────────────────────────────────────────────
+
+const InfoRow = ({
+  icon,
+  label,
+  value,
+  mono = false,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) => (
+  <div className="flex items-start gap-3">
+    <span className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+      <Icon name={icon} className="text-slate-500 text-base" />
+    </span>
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p
+        className={`text-sm text-slate-800 font-medium break-all ${mono ? 'font-mono text-xs' : ''}`}
+      >
+        {value || '—'}
+      </p>
+    </div>
+  </div>
+);
+
+// ─── Empresa Details Modal ────────────────────────────────────────────────────
+
+const EmpresaDetailsModal = ({
+  empresaId,
+  onClose,
+}: {
+  empresaId: number;
+  onClose: () => void;
+}) => {
+  const { data, isLoading, isError } = useQuery<Empresa>({
+    queryKey: ['empresa-detalhe', empresaId],
+    queryFn: async () => {
+      const res = await api.get(`/empresas/${empresaId}`);
+      return res.data?.mensagem ?? res.data;
+    },
+    staleTime: 30_000,
+  });
+
+  if (isLoading)
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+      >
+        <div className="bg-white rounded-2xl p-10 flex flex-col items-center gap-4 shadow-2xl">
+          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">
+            A carregar dados da empresa...
+          </p>
+        </div>
+      </motion.div>
+    );
+
+  if (isError || !data)
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <div className="bg-white rounded-2xl p-10 flex flex-col items-center gap-4 shadow-2xl">
+          <Icon name="error" className="text-red-500 text-4xl" />
+          <p className="text-sm text-slate-600 font-medium">
+            Erro ao carregar a empresa.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold"
+          >
+            Fechar
+          </button>
+        </div>
+      </motion.div>
+    );
+
+  const empresa = data;
+  const status = getStatus(empresa);
+  const sc = statusConfig[status];
+  const servicoMsg = boolLabel(empresa.servico_mensagens);
+  const servicoEmail = boolLabel(empresa.servico_email);
+  const servicoPrinc = boolLabel(empresa.servico_principal);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 24 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 24 }}
+        className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header ── */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <Icon name="corporate_fare" className="text-orange-500 text-xl" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 leading-tight">
+                {empresa.nomeEmpresa}
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">{empresa.nif}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${sc.text} ${sc.bg}`}
+            >
+              <span className={`size-1.5 rounded-full ${sc.dot}`} />
+              {sc.label}
+            </span>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+            >
+              <Icon name="close" className="text-slate-500" />
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[75vh] overflow-y-auto">
+          {/* ── Identificação ── */}
+          <div className="px-6 pt-6 pb-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Identificação
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="badge"
+                label="ID da Empresa"
+                value={`#${empresa.empresaId}`}
+              />
+              <InfoRow
+                icon="fingerprint"
+                label="NIF"
+                value={empresa.nif}
+                mono
+              />
+              <InfoRow
+                icon="person"
+                label="Responsável"
+                value={empresa.responsavel}
+              />
+              <InfoRow icon="mail" label="Email" value={empresa.emailEmpresa} />
+              <InfoRow
+                icon="call"
+                label="Telefone Principal"
+                value={empresa.telefoneEmpresa}
+              />
+              <InfoRow
+                icon="phone_in_talk"
+                label="Telefone Alternativo"
+                value={empresa.telefoneEmpresaAlt || '—'}
+              />
+            </div>
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Localização ── */}
+          <div className="px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Localização
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="location_on"
+                label="Endereço"
+                value={empresa.enderecoEmpresa}
+              />
+              <InfoRow
+                icon="location_city"
+                label="Cidade"
+                value={empresa.cidade}
+              />
+              <InfoRow icon="map" label="Província" value={empresa.provincia} />
+            </div>
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Serviços ── */}
+          <div className="px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Serviços Activados
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Mensagens', data: servicoMsg, icon: 'chat' },
+                { label: 'Email', data: servicoEmail, icon: 'mail' },
+                { label: 'Principal', data: servicoPrinc, icon: 'star' },
+              ].map(({ label, data: s, icon }) => (
+                <div
+                  key={label}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center ${s.color}`}
+                >
+                  <Icon name={icon} className="text-xl" />
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                    {label}
+                  </p>
+                  <p className="text-xs font-bold">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Segurança ── */}
+          <div className="px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Segurança & Acesso
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="login"
+                label="Tentativas de Login"
+                value={
+                  empresa.tentativas_login != null
+                    ? String(empresa.tentativas_login)
+                    : '—'
+                }
+              />
+              <InfoRow
+                icon="payments"
+                label="Entidade EMIS"
+                value={empresa.entidadePagamentoEMIS || '—'}
+              />
+            </div>
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Cronologia ── */}
+          <div className="px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Cronologia
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="add_circle"
+                label="Registado em"
+                value={formatDateTime(empresa.empresa_time)}
+              />
+              <InfoRow
+                icon="update"
+                label="Última Actualização"
+                value={formatDateTime(empresa.empresa_update)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+          <p className="text-xs text-slate-400 font-mono hidden sm:block">
+            ID #{empresa.empresaId} · {empresa.nif}
+          </p>
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+          >
+            Fechar
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // ─── Row Action Menu ──────────────────────────────────────────────────────────
 
 const RowMenu = ({
   empresa,
   onStatusChange,
   onDelete,
+  onView,
 }: {
   empresa: Empresa;
   onStatusChange: (id: number, bloqueio: '0' | '1') => void;
   onDelete: (id: number) => void;
+  onView: (id: number) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -208,11 +553,21 @@ const RowMenu = ({
   }, []);
 
   const actions = [
+    {
+      label: 'Ver Detalhes',
+      icon: 'visibility',
+      color: 'text-slate-700',
+      onClick: () => {
+        onView(empresa.empresaId);
+        setOpen(false);
+      },
+    },
     ...(status !== 'ativo'
       ? [
           {
             label: 'Desbloquear',
             icon: 'check_circle',
+            color: 'text-emerald-600',
             onClick: () => {
               onStatusChange(empresa.empresaId, '0');
               setOpen(false);
@@ -258,7 +613,7 @@ const RowMenu = ({
                 key={action.label}
                 type="button"
                 onClick={action.onClick}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left ${action.color ?? 'text-slate-700'}`}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left ${action.color}`}
               >
                 <Icon name={action.icon} className="text-base" />
                 {action.label}
@@ -550,12 +905,14 @@ export default function SellerPage() {
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState<number | null>(
+    null
+  );
   const PAGE_SIZE = 8;
 
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
   const [inputSearch, setInputSearch] = useState('');
 
-  // ── Fetch empresas ──────────────────────────────────────────────────────────
   const { data: response, isLoading } = useQuery<EmpresasResponse>({
     queryKey: ['empresas'],
     queryFn: async () => {
@@ -565,12 +922,10 @@ export default function SellerPage() {
     staleTime: 1000 * 60 * 2,
   });
 
-  // Dedup por empresaId (a API devolve duplicados)
   const allEmpresas: Empresa[] = Array.from(
     new Map((response?.mensagem ?? []).map((e) => [e.empresaId, e])).values()
   );
 
-  // Filtragem local (a API não suporta query params de filtro)
   const filtered = allEmpresas.filter((e) => {
     const q = filters.search.toLowerCase();
     const matchSearch =
@@ -583,12 +938,10 @@ export default function SellerPage() {
     return matchSearch && matchStatus;
   });
 
-  // Paginação local
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Stats derivadas
   const total = allEmpresas.length;
   const ativos = allEmpresas.filter((e) => getStatus(e) === 'ativo').length;
   const inativos = allEmpresas.filter((e) => getStatus(e) === 'inativo').length;
@@ -596,7 +949,6 @@ export default function SellerPage() {
     (e) => getStatus(e) === 'bloqueado'
   ).length;
 
-  // ── Mutations ───────────────────────────────────────────────────────────────
   const statusMutation = useMutation({
     mutationFn: async ({
       id,
@@ -605,9 +957,7 @@ export default function SellerPage() {
       id: number;
       bloqueio: '0' | '1';
     }) => {
-      await api.patch(`/empresas/${id}`, {
-        bloqueioEmpresa: bloqueio,
-      });
+      await api.patch(`/empresas/${id}`, { bloqueioEmpresa: bloqueio });
     },
     onSuccess: (_, { bloqueio }) => {
       queryClient.invalidateQueries({ queryKey: ['empresas'] });
@@ -631,7 +981,7 @@ export default function SellerPage() {
 
   const handleSearch = () => {
     setFilters((f) => ({ ...f, search: inputSearch }));
-    setPage(1); // Reseta para a primeira página ao buscar
+    setPage(1);
   };
 
   const statCards = [
@@ -674,7 +1024,6 @@ export default function SellerPage() {
       <style>{`.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }`}</style>
 
       <div className="p-6 sm:p-8">
-        {/* Heading */}
         <motion.div
           className="flex flex-wrap justify-between items-end gap-4 mb-8"
           initial={{ opacity: 0, y: -12 }}
@@ -691,22 +1040,12 @@ export default function SellerPage() {
           </div>
         </motion.div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((s, i) => (
-            <StatCard
-              key={s.label}
-              index={i}
-              label={s.label}
-              value={s.value}
-              icon={s.icon}
-              iconColor={s.iconColor}
-              iconBg={s.iconBg}
-            />
+            <StatCard key={s.label} index={i} {...s} />
           ))}
         </div>
 
-        {/* Filters */}
         <motion.div
           className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 p-4"
           initial={{ opacity: 0, y: 8 }}
@@ -721,7 +1060,7 @@ export default function SellerPage() {
               />
               <input
                 className="w-full pl-12 pr-4 h-12 bg-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-orange-500/30 transition-all"
-                placeholder="Buscar categoria por nome ou descrição..."
+                placeholder="Buscar por nome, NIF, email ou responsável..."
                 value={inputSearch}
                 onChange={(e) => setInputSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -764,7 +1103,6 @@ export default function SellerPage() {
           </div>
         </motion.div>
 
-        {/* Table */}
         <motion.div
           className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
           initial={{ opacity: 0, y: 12 }}
@@ -831,36 +1169,26 @@ export default function SellerPage() {
                           transition={{ delay: index * 0.04 }}
                           className="hover:bg-slate-50/50 transition-colors"
                         >
-                          {/* Empresa */}
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div>
-                                <p className="text-sm font-bold text-slate-900">
-                                  {empresa.nomeEmpresa}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {empresa.emailEmpresa}
-                                </p>
-                              </div>
-                            </div>
+                            <p className="text-sm font-bold text-slate-900">
+                              {empresa.nomeEmpresa}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {empresa.emailEmpresa}
+                            </p>
                           </td>
-                          {/* NIF */}
                           <td className="px-6 py-4 text-sm text-slate-600 font-mono">
                             {empresa.nif}
                           </td>
-                          {/* Responsável */}
                           <td className="px-6 py-4 text-sm text-slate-700">
                             {empresa.responsavel}
                           </td>
-                          {/* Contacto */}
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {empresa.telefoneEmpresa}
                           </td>
-                          {/* Registo */}
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {formatDate(empresa.empresa_time)}
                           </td>
-                          {/* Estado */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <span
@@ -873,7 +1201,6 @@ export default function SellerPage() {
                               </span>
                             </div>
                           </td>
-                          {/* Acções */}
                           <td className="px-6 py-4 text-right">
                             <RowMenu
                               empresa={empresa}
@@ -881,6 +1208,7 @@ export default function SellerPage() {
                                 statusMutation.mutate({ id, bloqueio })
                               }
                               onDelete={(id) => deleteMutation.mutate(id)}
+                              onView={(id) => setSelectedEmpresaId(id)}
                             />
                           </td>
                         </motion.tr>
@@ -891,7 +1219,6 @@ export default function SellerPage() {
               </tbody>
             </table>
           </div>
-
           <Pagination
             page={page}
             totalPages={totalPages}
@@ -902,7 +1229,6 @@ export default function SellerPage() {
         </motion.div>
       </div>
 
-      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <NewEmpresaModal
@@ -911,6 +1237,15 @@ export default function SellerPage() {
               queryClient.invalidateQueries({ queryKey: ['empresas'] });
               showToast('Empresa criada com sucesso!');
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedEmpresaId !== null && (
+          <EmpresaDetailsModal
+            empresaId={selectedEmpresaId}
+            onClose={() => setSelectedEmpresaId(null)}
           />
         )}
       </AnimatePresence>
