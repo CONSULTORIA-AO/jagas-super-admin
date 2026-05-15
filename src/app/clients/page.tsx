@@ -338,11 +338,6 @@ const ClientDetailSheet = ({
           <div className="px-6 pb-8">
             {/* Avatar + nome */}
             <div className="flex items-center gap-4 py-6 border-b border-slate-100 mb-2">
-              <img
-                src={getAvatar(cliente)}
-                alt={cliente.nomeCliente}
-                className="size-16 rounded-full object-cover flex-shrink-0 border-2 border-slate-100"
-              />
               <div>
                 <p className="text-lg font-black text-slate-900 leading-tight">
                   {cliente.nomeCliente}

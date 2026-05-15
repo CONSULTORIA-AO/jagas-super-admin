@@ -266,17 +266,18 @@ const CategoriaDetailsModal = ({
         initial={{ scale: 0.95, y: 24 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 24 }}
-        className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: 'calc(100dvh - 2rem)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Header ── */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div className="flex items-center gap-3">
+        {/* ── Header (fixo) ── */}
+        <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
               <Icon name="category" className="text-blue-500 text-xl" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 leading-tight">
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-slate-900 leading-tight truncate">
                 {cat.nome_cat}
               </h3>
               <p className="text-xs text-slate-400 font-mono">
@@ -284,9 +285,9 @@ const CategoriaDetailsModal = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${isAtivo ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${isAtivo ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-slate-50 border-slate-200'}`}
             >
               <span
                 className={`size-1.5 rounded-full ${isAtivo ? 'bg-emerald-500' : 'bg-slate-400'}`}
@@ -295,14 +296,15 @@ const CategoriaDetailsModal = ({
             </span>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+              className="p-2 hover:bg-slate-200 rounded-full transition-colors flex-shrink-0"
             >
               <Icon name="close" className="text-slate-500" />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        {/* ── Body (scrollável) ── */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* ── Informações ── */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
@@ -350,7 +352,7 @@ const CategoriaDetailsModal = ({
           >
             <Icon
               name={isAtivo ? 'check_circle' : 'block'}
-              className={`text-2xl ${isAtivo ? 'text-emerald-500' : 'text-slate-400'}`}
+              className={`text-2xl flex-shrink-0 ${isAtivo ? 'text-emerald-500' : 'text-slate-400'}`}
             />
             <div>
               <p
@@ -367,8 +369,8 @@ const CategoriaDetailsModal = ({
           </div>
         </div>
 
-        {/* ── Footer ── */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+        {/* ── Footer (fixo) ── */}
+        <div className="flex-shrink-0 px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
           <p className="text-xs text-slate-400 font-mono hidden sm:block">
             categoria #{cat.categoria_id}
           </p>
@@ -607,10 +609,8 @@ export default function CategoriesPage() {
                           {cat.ativo_cat === '1' ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
-                      {/* ── Ações: Ver Detalhes + Toggle Status ── */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {/* Ver Detalhes */}
                           <button
                             onClick={() =>
                               setSelectedCategoriaId(cat.categoria_id)
@@ -620,7 +620,6 @@ export default function CategoriesPage() {
                           >
                             <Icon name="visibility" />
                           </button>
-                          {/* Toggle Status */}
                           <button
                             onClick={() =>
                               toggleStatusMutation.mutate({
