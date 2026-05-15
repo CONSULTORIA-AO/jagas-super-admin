@@ -3,6 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminLayout } from '@/components/adminLayout';
 import { api } from '@/utils/api';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +30,37 @@ interface Cliente {
   ultimo_login: string;
   referenciaEMIS: string;
   observacoes: string | null;
+}
+
+interface ClienteDetalhado {
+  clienteId: number;
+  enderecoCliente: string;
+  endereco_mac_unico: string;
+  arquivoIdentificacao: string | null;
+  bloqueio: string;
+  nomeCliente: string;
+  responsavel: string | null;
+  emailCliente: string;
+  fotoCliente: string | null;
+  telefoneCliente: string;
+  telefoneClienteAlt: string;
+  referenciaEMIS: string;
+  criado_em: string;
+  actualizado_em: string;
+  observacoes: string | null;
+  ultimo_login: string;
+  novo_cliente: string;
+  id_conf: number;
+  clienteIdConf: string;
+  tentativas_login: number;
+  codigo_seguranca: string;
+  codigo_confirmacao: string;
+  tempo_de_vida_codigo_seguranca: string;
+  servico_mensagens: string;
+  servico_email: string;
+  servico_principal: string;
+  config_time: string;
+  config_update: string;
 }
 
 interface ClientesResponse {
@@ -84,7 +122,7 @@ const formatDate = (iso: string) =>
     year: 'numeric',
   });
 
-const getAvatar = (c: Cliente) =>
+const getAvatar = (c: Cliente | ClienteDetalhado) =>
   c.fotoCliente
     ? `${import.meta.env.VITE_API_URL}images/clients/${c.fotoCliente}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nomeCliente)}&background=f97316&color=fff&size=64`;
@@ -165,16 +203,300 @@ const StatCard = ({
   </motion.div>
 );
 
+// ─── Detail Sheet ─────────────────────────────────────────────────────────────
+
+const DetailRow = ({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+  icon?: string;
+}) => (
+  <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
+    {icon && (
+      <span className="text-slate-400 mt-0.5">
+        <Icon name={icon} className="text-base" />
+      </span>
+    )}
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+        {label}
+      </p>
+      <p className="text-sm font-medium text-slate-800 break-all">
+        {value !== null && value !== undefined && value !== ''
+          ? String(value)
+          : '—'}
+      </p>
+    </div>
+  </div>
+);
+
+const BooleanBadge = ({ value, label }: { value: string; label: string }) => {
+  const active = value === 'true' || value === '1';
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
+      <span className="text-slate-400 mt-0.5">
+        <Icon name="toggle_on" className="text-base" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+          {label}
+        </p>
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+            active
+              ? 'bg-emerald-50 text-emerald-600'
+              : 'bg-slate-100 text-slate-500'
+          }`}
+        >
+          <span
+            className={`size-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-400'}`}
+          />
+          {active ? 'Activo' : 'Inactivo'}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ClientDetailSheet = ({
+  clienteId,
+  open,
+  onClose,
+}: {
+  clienteId: number | null;
+  open: boolean;
+  onClose: () => void;
+}) => {
+  const { data, isLoading, isError } = useQuery<{ mensagem: ClienteDetalhado }>(
+    {
+      queryKey: ['cliente-detalhe', clienteId],
+      queryFn: async () => {
+        const res = await api.get(`/clientes/${clienteId}`);
+        return res.data;
+      },
+      enabled: open && clienteId !== null,
+      staleTime: 1000 * 60 * 2,
+    }
+  );
+
+  const cliente = data?.mensagem;
+
+  const isBloqueado = cliente?.bloqueio === '1';
+  const isNovo = cliente?.novo_cliente === '1';
+  const statusLabel = isBloqueado ? 'Bloqueado' : isNovo ? 'Inativo' : 'Ativo';
+  const statusDot = isBloqueado
+    ? 'bg-red-500'
+    : isNovo
+      ? 'bg-slate-400'
+      : 'bg-emerald-500';
+  const statusText = isBloqueado
+    ? 'text-red-600'
+    : isNovo
+      ? 'text-slate-500'
+      : 'text-emerald-600';
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 bg-white">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-6 pt-6 pb-4">
+          <SheetHeader>
+            <SheetTitle className="text-slate-900 text-xl font-black tracking-tight">
+              Detalhes do Cliente
+            </SheetTitle>
+            <SheetDescription className="text-slate-500 text-sm">
+              Informações completas do cliente e configurações da conta.
+            </SheetDescription>
+          </SheetHeader>
+        </div>
+
+        {isLoading && (
+          <div className="p-6 space-y-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-10 bg-slate-100 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        )}
+
+        {isError && (
+          <div className="p-6 text-center text-slate-400">
+            <Icon
+              name="error"
+              className="text-4xl mb-2 block mx-auto text-red-400"
+            />
+            <p className="text-sm font-medium">Erro ao carregar os detalhes.</p>
+          </div>
+        )}
+
+        {cliente && (
+          <div className="px-6 pb-8">
+            {/* Avatar + nome */}
+            <div className="flex items-center gap-4 py-6 border-b border-slate-100 mb-2">
+              <img
+                src={getAvatar(cliente)}
+                alt={cliente.nomeCliente}
+                className="size-16 rounded-full object-cover flex-shrink-0 border-2 border-slate-100"
+              />
+              <div>
+                <p className="text-lg font-black text-slate-900 leading-tight">
+                  {cliente.nomeCliente}
+                </p>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {cliente.emailCliente}
+                </p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span
+                    className={`size-2 rounded-full inline-block ${statusDot}`}
+                  />
+                  <span className={`text-xs font-semibold ${statusText}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Secção: Dados Pessoais */}
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mt-5 mb-1">
+              Dados Pessoais
+            </p>
+            <div className="bg-slate-50 rounded-xl px-4 divide-y divide-slate-100">
+              <DetailRow
+                label="ID do Cliente"
+                value={cliente.clienteId}
+                icon="tag"
+              />
+              <DetailRow
+                label="Nome Completo"
+                value={cliente.nomeCliente}
+                icon="person"
+              />
+              <DetailRow
+                label="Responsável"
+                value={cliente.responsavel}
+                icon="manage_accounts"
+              />
+              <DetailRow
+                label="Email"
+                value={cliente.emailCliente}
+                icon="email"
+              />
+              <DetailRow
+                label="Telefone Principal"
+                value={cliente.telefoneCliente}
+                icon="phone"
+              />
+              <DetailRow
+                label="Telefone Alternativo"
+                value={cliente.telefoneClienteAlt}
+                icon="phone_forwarded"
+              />
+              <DetailRow
+                label="Endereço"
+                value={cliente.enderecoCliente}
+                icon="location_on"
+              />
+              <DetailRow
+                label="Observações"
+                value={cliente.observacoes}
+                icon="notes"
+              />
+              <DetailRow
+                label="Arquivo de Identificação"
+                value={cliente.arquivoIdentificacao}
+                icon="badge"
+              />
+              <DetailRow
+                label="Referência EMIS"
+                value={cliente.referenciaEMIS}
+                icon="receipt_long"
+              />
+            </div>
+
+            {/* Secção: Conta & Acesso */}
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mt-6 mb-1">
+              Conta & Acesso
+            </p>
+            <div className="bg-slate-50 rounded-xl px-4 divide-y divide-slate-100">
+              <DetailRow
+                label="Tentativas de Login"
+                value={cliente.tentativas_login}
+                icon="login"
+              />
+              <DetailRow
+                label="Último Login"
+                value={formatDate(cliente.ultimo_login)}
+                icon="schedule"
+              />
+              <DetailRow
+                label="Criado em"
+                value={formatDate(cliente.criado_em)}
+                icon="calendar_today"
+              />
+              <DetailRow
+                label="Actualizado em"
+                value={formatDate(cliente.actualizado_em)}
+                icon="update"
+              />
+              <DetailRow
+                label="MAC Único"
+                value={cliente.endereco_mac_unico}
+                icon="fingerprint"
+              />
+            </div>
+
+            {/* Secção: Configurações */}
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mt-6 mb-1">
+              Configurações de Serviço
+            </p>
+            <div className="bg-slate-50 rounded-xl px-4 divide-y divide-slate-100">
+              <BooleanBadge
+                value={cliente.servico_principal}
+                label="Serviço Principal"
+              />
+              <BooleanBadge
+                value={cliente.servico_mensagens}
+                label="Serviço de Mensagens"
+              />
+              <BooleanBadge
+                value={cliente.servico_email}
+                label="Serviço de Email"
+              />
+              <DetailRow
+                label="Configuração criada em"
+                value={formatDate(cliente.config_time)}
+                icon="calendar_today"
+              />
+              <DetailRow
+                label="Configuração actualizada em"
+                value={formatDate(cliente.config_update)}
+                icon="update"
+              />
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // ─── Row Action Menu ──────────────────────────────────────────────────────────
 
 const RowMenu = ({
   cliente,
   onStatusChange,
   onDelete,
+  onViewDetails,
 }: {
   cliente: Cliente;
   onStatusChange: (id: number, bloqueio: '0' | '1') => void;
   onDelete: (id: number) => void;
+  onViewDetails: (id: number) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -190,11 +512,21 @@ const RowMenu = ({
   }, []);
 
   const actions = [
+    {
+      label: 'Ver detalhes',
+      icon: 'info',
+      color: 'text-slate-700',
+      onClick: () => {
+        onViewDetails(cliente.clienteId);
+        setOpen(false);
+      },
+    },
     ...(status === 'bloqueado'
       ? [
           {
             label: 'Desbloquear',
             icon: 'check_circle',
+            color: 'text-emerald-600',
             onClick: () => {
               onStatusChange(cliente.clienteId, '0');
               setOpen(false);
@@ -237,7 +569,7 @@ const RowMenu = ({
                 key={action.label}
                 type="button"
                 onClick={action.onClick}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left ${action.color ?? 'text-slate-700'}`}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left ${action.color}`}
               >
                 <Icon name={action.icon} className="text-base" />
                 {action.label}
@@ -337,6 +669,17 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
 
+  // ── Detail Sheet state ──────────────────────────────────────────────────────
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedClienteId, setSelectedClienteId] = useState<number | null>(
+    null
+  );
+
+  const handleViewDetails = (id: number) => {
+    setSelectedClienteId(id);
+    setSheetOpen(true);
+  };
+
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
   const [inputSearch, setInputSearch] = useState('');
 
@@ -352,7 +695,6 @@ export default function ClientsPage() {
 
   const allClientes: Cliente[] = response?.mensagem ?? [];
 
-  // Filtragem local
   const filtered = allClientes.filter((c) => {
     const q = filters.search.toLowerCase();
     const matchSearch =
@@ -365,12 +707,10 @@ export default function ClientsPage() {
     return matchSearch && matchStatus;
   });
 
-  // Paginação local
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Stats derivadas
   const total = allClientes.length;
   const ativos = allClientes.filter((c) => getStatus(c) === 'ativo').length;
   const inativos = allClientes.filter((c) => getStatus(c) === 'inativo').length;
@@ -387,9 +727,7 @@ export default function ClientsPage() {
       id: number;
       bloqueio: '0' | '1';
     }) => {
-      await api.patch(`/clientes/${id}`, {
-        bloqueio,
-      });
+      await api.patch(`/clientes/${id}`, { bloqueio });
     },
     onSuccess: (_, { bloqueio }) => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
@@ -402,7 +740,7 @@ export default function ClientsPage() {
 
   const handleSearch = () => {
     setFilters((f) => ({ ...f, search: inputSearch }));
-    setPage(1); // Reseta para a primeira página ao buscar
+    setPage(1);
   };
 
   const deleteMutation = useMutation({
@@ -665,6 +1003,7 @@ export default function ClientsPage() {
                                 statusMutation.mutate({ id, bloqueio })
                               }
                               onDelete={(id) => deleteMutation.mutate(id)}
+                              onViewDetails={handleViewDetails}
                             />
                           </td>
                         </motion.tr>
@@ -708,6 +1047,13 @@ export default function ClientsPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Detail Sheet */}
+      <ClientDetailSheet
+        clienteId={selectedClienteId}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
 
       <ToastContainer toasts={toasts} />
     </AdminLayout>
