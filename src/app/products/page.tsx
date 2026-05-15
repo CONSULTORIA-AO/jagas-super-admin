@@ -3,10 +3,51 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminLayout } from '@/components/adminLayout';
 import { api } from '@/utils/api';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ProdutoStatus = 'ativo' | 'inativo';
+
+interface Vendedor {
+  empresaId: number;
+  nomeEmpresa: string;
+  endereco_mac_unico_empresa: string;
+  nif: string;
+  enderecoEmpresa: string;
+  cidade: string;
+  provincia: string;
+  emailEmpresa: string;
+  logoEmpresa: string;
+  telefoneEmpresa: string;
+  telefoneEmpresaAlt: string;
+  responsavel: string;
+  entidadePagamentoEMIS: string;
+  bloqueioEmpresa: string;
+  nova_empresa: string;
+  ultimo_login: string;
+  empresa_time: string;
+  empresa_update: string;
+}
+
+interface ProdutoDetalhado {
+  produtoId: number;
+  empresaDona: number;
+  imagem_produto: string;
+  descricao: string;
+  unidadeMedida: string;
+  preco: number;
+  ativo: string;
+  produto_time: string;
+  produto_update: string;
+  vendedor: Vendedor;
+}
 
 interface Produto {
   produtoId: number;
@@ -158,16 +199,251 @@ const StatCard = ({
   </motion.div>
 );
 
+// ─── Detail Sheet ─────────────────────────────────────────────────────────────
+
+const DetailRow = ({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  icon?: string;
+}) => (
+  <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
+    {icon && (
+      <span className="text-slate-400 mt-0.5">
+        <Icon name={icon} className="text-base" />
+      </span>
+    )}
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+        {label}
+      </p>
+      <p className="text-sm font-medium text-slate-800 break-all">
+        {value || '—'}
+      </p>
+    </div>
+  </div>
+);
+
+const ProductDetailSheet = ({
+  produtoId,
+  open,
+  onClose,
+}: {
+  produtoId: number | null;
+  open: boolean;
+  onClose: () => void;
+}) => {
+  const { data, isLoading, isError } = useQuery<{ mensagem: ProdutoDetalhado }>(
+    {
+      queryKey: ['produto-detalhe', produtoId],
+      queryFn: async () => {
+        const res = await api.get(`/produtos/${produtoId}`);
+        return res.data;
+      },
+      enabled: open && produtoId !== null,
+      staleTime: 1000 * 60 * 2,
+    }
+  );
+
+  const produto = data?.mensagem;
+  const vendedor = produto?.vendedor;
+
+  const isAtivo = produto?.ativo === '1';
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 bg-white     ">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-6 pt-6 pb-4">
+          <SheetHeader>
+            <SheetTitle className="text-slate-900 text-xl font-black tracking-tight">
+              Detalhes do Produto
+            </SheetTitle>
+            <SheetDescription className="text-slate-500 text-sm">
+              Informações completas sobre o produto e empresa vendedora.
+            </SheetDescription>
+          </SheetHeader>
+        </div>
+
+        {isLoading && (
+          <div className="p-6 space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-10 bg-slate-100 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        )}
+
+        {isError && (
+          <div className="p-6 text-center text-slate-400">
+            <Icon
+              name="error"
+              className="text-4xl mb-2 block mx-auto text-red-400"
+            />
+            <p className="text-sm font-medium">Erro ao carregar os detalhes.</p>
+          </div>
+        )}
+
+        {produto && (
+          <div className="px-6 pb-8">
+            {/* Imagem + nome */}
+            <div className="flex items-center gap-4 py-6 border-b border-slate-100 mb-2">
+              <div>
+                <p className="text-lg font-black text-slate-900 leading-tight">
+                  {produto.descricao}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`size-2 rounded-full inline-block ${isAtivo ? 'bg-emerald-500' : 'bg-slate-400'}`}
+                  />
+                  <span
+                    className={`text-xs font-semibold ${isAtivo ? 'text-emerald-600' : 'text-slate-500'}`}
+                  >
+                    {isAtivo ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Secção: Produto */}
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mt-5 mb-1">
+              Informações do Produto
+            </p>
+            <div className="bg-slate-50 rounded-xl px-4 divide-y divide-slate-100">
+              <DetailRow
+                label="ID do Produto"
+                value={produto.produtoId}
+                icon="tag"
+              />
+              <DetailRow
+                label="Descrição"
+                value={produto.descricao}
+                icon="description"
+              />
+              <DetailRow
+                label="Unidade de Medida"
+                value={produto.unidadeMedida}
+                icon="straighten"
+              />
+              <DetailRow
+                label="Preço"
+                value={formatPrice(produto.preco)}
+                icon="payments"
+              />
+              <DetailRow
+                label="Imagem (ficheiro)"
+                value={produto.imagem_produto || '—'}
+                icon="image"
+              />
+              <DetailRow
+                label="Data de Registo"
+                value={formatDate(produto.produto_time)}
+                icon="calendar_today"
+              />
+              <DetailRow
+                label="Última Actualização"
+                value={formatDate(produto.produto_update)}
+                icon="update"
+              />
+            </div>
+
+            {/* Secção: Empresa Vendedora */}
+            {vendedor && (
+              <>
+                <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mt-6 mb-1">
+                  Empresa Vendedora
+                </p>
+                <div className="bg-slate-50 rounded-xl px-4 divide-y divide-slate-100">
+                  <DetailRow
+                    label="Nome da Empresa"
+                    value={vendedor.nomeEmpresa}
+                    icon="store"
+                  />
+                  <DetailRow
+                    label="Responsável"
+                    value={vendedor.responsavel}
+                    icon="person"
+                  />
+                  <DetailRow label="NIF" value={vendedor.nif} icon="badge" />
+                  <DetailRow
+                    label="Email"
+                    value={vendedor.emailEmpresa}
+                    icon="email"
+                  />
+                  <DetailRow
+                    label="Telefone Principal"
+                    value={vendedor.telefoneEmpresa}
+                    icon="phone"
+                  />
+                  <DetailRow
+                    label="Telefone Alternativo"
+                    value={vendedor.telefoneEmpresaAlt}
+                    icon="phone_forwarded"
+                  />
+                  <DetailRow
+                    label="Endereço"
+                    value={vendedor.enderecoEmpresa}
+                    icon="location_on"
+                  />
+                  <DetailRow
+                    label="Cidade"
+                    value={vendedor.cidade}
+                    icon="location_city"
+                  />
+                  <DetailRow
+                    label="Província"
+                    value={vendedor.provincia}
+                    icon="map"
+                  />
+                  <DetailRow
+                    label="Estado da Empresa"
+                    value={
+                      vendedor.bloqueioEmpresa === '0' ? 'Activa' : 'Bloqueada'
+                    }
+                    icon="business"
+                  />
+                  <DetailRow
+                    label="Último Login"
+                    value={formatDate(vendedor.ultimo_login)}
+                    icon="login"
+                  />
+                  <DetailRow
+                    label="Data de Registo"
+                    value={formatDate(vendedor.empresa_time)}
+                    icon="calendar_today"
+                  />
+                  <DetailRow
+                    label="MAC Único"
+                    value={vendedor.endereco_mac_unico_empresa}
+                    icon="fingerprint"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // ─── Row Action Menu ──────────────────────────────────────────────────────────
 
 const RowMenu = ({
   produto,
   onToggleStatus,
   onDelete,
+  onViewDetails,
 }: {
   produto: Produto;
   onToggleStatus: (id: number, ativo: '0' | '1') => void;
   onDelete: (id: number) => void;
+  onViewDetails: (id: number) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useState<HTMLDivElement | null>(null);
@@ -187,6 +463,15 @@ const RowMenu = ({
   const isAtivo = produto.ativo === '1';
 
   const actions = [
+    {
+      label: 'Ver detalhes',
+      icon: 'info',
+      color: 'text-slate-700',
+      onClick: () => {
+        onViewDetails(produto.produtoId);
+        setOpen(false);
+      },
+    },
     {
       label: isAtivo ? 'Desactivar produto' : 'Activar produto',
       icon: isAtivo ? 'pause_circle' : 'check_circle',
@@ -320,6 +605,17 @@ export default function ProductsPage() {
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
 
+  // ── Detail Sheet state ──────────────────────────────────────────────────────
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedProdutoId, setSelectedProdutoId] = useState<number | null>(
+    null
+  );
+
+  const handleViewDetails = (id: number) => {
+    setSelectedProdutoId(id);
+    setSheetOpen(true);
+  };
+
   const PAGE_SIZE = 8;
 
   const [filters, setFilters] = useState<Filters>({ search: '', status: '' });
@@ -327,7 +623,7 @@ export default function ProductsPage() {
 
   const handleSearch = () => {
     setFilters((f) => ({ ...f, search: inputSearch }));
-    setPage(1); // Reseta para a primeira página ao buscar
+    setPage(1);
   };
 
   // ── Fetch produtos ──────────────────────────────────────────────────────────
@@ -342,33 +638,22 @@ export default function ProductsPage() {
 
   const allProdutos: Produto[] = response?.mensagem ?? [];
 
-  // Filtragem local
   const filtered = allProdutos.filter((p) => {
-    // Convertemos a busca para minúsculas uma única vez
     const q = filters.search.toLowerCase();
-
-    // Se não houver busca, retorna tudo (curto-circuito para performance)
     if (!q && !filters.status) return true;
-
-    // Blindagem contra campos null/undefined vindo da API
     const descricao = (p.descricao || '').toLowerCase();
     const unidade = (p.unidadeMedida || '').toLowerCase();
-    const preco = String(p.preco || 0); // Garante que preço nulo vire '0'
-
+    const preco = String(p.preco || 0);
     const matchSearch =
       !q || descricao.includes(q) || unidade.includes(q) || preco.includes(q);
-
     const matchStatus = !filters.status || getStatus(p) === filters.status;
-
     return matchSearch && matchStatus;
   });
 
-  // Paginação local
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Stats derivadas
   const total = allProdutos.length;
   const ativos = allProdutos.filter((p) => p.ativo === '1').length;
   const inativos = allProdutos.filter((p) => p.ativo === '0').length;
@@ -643,6 +928,7 @@ export default function ProductsPage() {
                                 toggleMutation.mutate({ id, ativo })
                               }
                               onDelete={(id) => deleteMutation.mutate(id)}
+                              onViewDetails={handleViewDetails}
                             />
                           </td>
                         </motion.tr>
@@ -663,6 +949,13 @@ export default function ProductsPage() {
           />
         </motion.div>
       </div>
+
+      {/* Detail Sheet */}
+      <ProductDetailSheet
+        produtoId={selectedProdutoId}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
 
       <ToastContainer toasts={toasts} />
     </AdminLayout>
