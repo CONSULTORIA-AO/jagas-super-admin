@@ -20,16 +20,19 @@ interface Pedido {
   pedidoCotacaoId: number;
   numero_cotacao: string;
   clienteIdPedido: number;
+  vendedorIdpedido: number | null;
   statusPedido: PedidoStatus;
   pedido_time: string;
   pedido_update: string;
-  nomeCliente: string;
-  emailCliente: string;
-  fotoCliente: string;
-  telefoneCliente: string;
-  telefoneClienteAlt: string;
-  criado_em: string;
-  actualizado_em: string;
+  nifCliente: string | null;
+  // campos presentes na listagem mas ausentes no endpoint /pedidos/:id
+  nomeCliente?: string;
+  emailCliente?: string;
+  fotoCliente?: string;
+  telefoneCliente?: string;
+  telefoneClienteAlt?: string;
+  criado_em?: string;
+  actualizado_em?: string;
   itens: ItemPedido[];
 }
 
@@ -72,19 +75,31 @@ const Icon = ({
 
 const statusConfig: Record<
   string,
-  { dot: string; text: string; label: string }
+  { dot: string; text: string; label: string; bg: string }
 > = {
-  Pendente: { dot: 'bg-amber-500', text: 'text-amber-600', label: 'Pendente' },
+  Pendente: {
+    dot: 'bg-amber-500',
+    text: 'text-amber-700',
+    label: 'Pendente',
+    bg: 'bg-amber-50 border-amber-200',
+  },
   Concluído: {
     dot: 'bg-emerald-500',
-    text: 'text-emerald-600',
+    text: 'text-emerald-700',
     label: 'Concluído',
+    bg: 'bg-emerald-50 border-emerald-200',
   },
-  Cancelado: { dot: 'bg-red-500', text: 'text-red-600', label: 'Cancelado' },
+  Cancelado: {
+    dot: 'bg-red-500',
+    text: 'text-red-700',
+    label: 'Cancelado',
+    bg: 'bg-red-50 border-red-200',
+  },
   default: {
     dot: 'bg-slate-400',
     text: 'text-slate-500',
     label: 'Desconhecido',
+    bg: 'bg-slate-50 border-slate-200',
   },
 };
 
@@ -104,11 +119,10 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   });
 
-// Calcula o total do pedido somando os itens
 const calculateOrderTotal = (itens: ItemPedido[]) =>
   itens.reduce((acc, item) => acc + item.preco_total, 0);
 
-// ─── Componentes de UI (Mantidos do Original) ───────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
 
 interface Toast {
   id: number;
@@ -147,6 +161,8 @@ const ToastContainer = ({ toasts }: { toasts: Toast[] }) => (
   </div>
 );
 
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
 const StatCard = ({ label, value, icon, iconColor, iconBg, index }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -166,14 +182,16 @@ const StatCard = ({ label, value, icon, iconColor, iconBg, index }: any) => (
   </motion.div>
 );
 
+// ─── Row Menu ─────────────────────────────────────────────────────────────────
+
 const RowMenu = ({
   pedido,
   onDelete,
-  onView, // Adicionado
+  onView,
 }: {
   pedido: Pedido;
   onDelete: (id: number) => void;
-  onView: (pedido: Pedido) => void; // Adicionado
+  onView: (pedido: Pedido) => void;
 }) => {
   const [open, setOpen] = useState(false);
   return (
@@ -196,7 +214,7 @@ const RowMenu = ({
               onClick={() => {
                 onView(pedido);
                 setOpen(false);
-              }} // Atualizado
+              }}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-600"
             >
               <Icon name="visibility" className="text-base" /> Ver Detalhes
@@ -207,6 +225,8 @@ const RowMenu = ({
     </div>
   );
 };
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
 
 const Pagination = ({ page, totalPages, total, pageSize, onPage }: any) => {
   const from = (page - 1) * pageSize + 1;
@@ -240,16 +260,100 @@ const Pagination = ({ page, totalPages, total, pageSize, onPage }: any) => {
   );
 };
 
+// ─── Info Row helper ──────────────────────────────────────────────────────────
+
+const InfoRow = ({
+  icon,
+  label,
+  value,
+  mono = false,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) => (
+  <div className="flex items-start gap-3">
+    <span className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+      <Icon name={icon} className="text-slate-500 text-base" />
+    </span>
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p
+        className={`text-sm text-slate-800 font-medium break-all ${mono ? 'font-mono text-xs' : ''}`}
+      >
+        {value || '—'}
+      </p>
+    </div>
+  </div>
+);
+
+// ─── Order Details Modal ──────────────────────────────────────────────────────
+
 const OrderDetailsModal = ({
-  pedido,
+  pedidoId,
   onClose,
 }: {
-  pedido: Pedido;
+  pedidoId: number;
   onClose: () => void;
 }) => {
-  if (!pedido) return null;
+  const { data, isLoading, isError } = useQuery<Pedido>({
+    queryKey: ['pedido-detalhe', pedidoId],
+    queryFn: async () => {
+      const res = await api.get(`/pedidos/${pedidoId}`);
+      // suporta tanto { mensagem: {...} } quanto o objecto directo
+      return res.data?.mensagem ?? res.data;
+    },
+    staleTime: 30_000,
+  });
+
+  if (isLoading)
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+      >
+        <div className="bg-white rounded-2xl p-10 flex flex-col items-center gap-4 shadow-2xl">
+          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">
+            A carregar detalhes...
+          </p>
+        </div>
+      </motion.div>
+    );
+
+  if (isError || !data)
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <div className="bg-white rounded-2xl p-10 flex flex-col items-center gap-4 shadow-2xl">
+          <Icon name="error" className="text-red-500 text-4xl" />
+          <p className="text-sm text-slate-600 font-medium">
+            Erro ao carregar o pedido.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold"
+          >
+            Fechar
+          </button>
+        </div>
+      </motion.div>
+    );
+
+  const pedido = data;
 
   const sc = statusConfig[pedido.statusPedido] || statusConfig.default;
+  const total = calculateOrderTotal(pedido.itens);
 
   return (
     <motion.div
@@ -260,101 +364,190 @@ const OrderDetailsModal = ({
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
+        initial={{ scale: 0.95, y: 24 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        exit={{ scale: 0.95, y: 24 }}
         className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <h3 className="text-lg font-bold text-slate-900">
               Detalhes do Pedido
             </h3>
-            <p className="text-xs text-slate-500 font-mono">
+            <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-xs">
               {pedido.numero_cotacao}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200 rounded-full transition-colors"
-          >
-            <Icon name="close" className="text-slate-500" />
-          </button>
+          <div className="flex items-center gap-3">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${sc.text} ${sc.bg}`}
+            >
+              <span className={`size-1.5 rounded-full ${sc.dot}`} />
+              {sc.label}
+            </span>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+            >
+              <Icon name="close" className="text-slate-500" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
-          {/* Cliente Info */}
-          <div className="flex items-center gap-4 mb-8 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
-            <div className="flex-1">
-              <h4 className="font-bold text-slate-900">{pedido.nomeCliente}</h4>
-              <p className="text-sm text-slate-600 flex items-center gap-2">
-                <Icon name="mail" className="text-xs" /> {pedido.emailCliente}
-              </p>
-              <p className="text-sm text-slate-600 flex items-center gap-2">
-                <Icon name="call" className="text-xs" />{' '}
-                {pedido.telefoneCliente}
-              </p>
+        <div className="max-h-[75vh] overflow-y-auto">
+          {/* ── Identificação ── */}
+          <div className="px-6 pt-6 pb-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Identificação
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="badge"
+                label="ID do Pedido"
+                value={`#${pedido.pedidoCotacaoId}`}
+              />
+              <InfoRow
+                icon="person"
+                label="ID do Cliente"
+                value={`#${pedido.clienteIdPedido}`}
+              />
+              <InfoRow
+                icon="sell"
+                label="ID do Vendedor"
+                value={
+                  pedido.vendedorIdpedido ? `#${pedido.vendedorIdpedido}` : '—'
+                }
+              />
+              <InfoRow
+                icon="fingerprint"
+                label="NIF do Cliente"
+                value={pedido.nifCliente ?? '—'}
+              />
             </div>
-            <div className="text-right">
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${sc.text} bg-white border border-current`}
-              >
-                <span className={`size-1.5 rounded-full ${sc.dot}`} />
-                {sc.label}
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Datas ── */}
+          <div className="px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Cronologia
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow
+                icon="add_circle"
+                label="Pedido Criado em"
+                value={formatDate(pedido.pedido_time)}
+              />
+              <InfoRow
+                icon="update"
+                label="Última Atualização"
+                value={formatDate(pedido.pedido_update)}
+              />
+            </div>
+          </div>
+
+          <div className="mx-6 border-t border-slate-100" />
+
+          {/* ── Itens ── */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                Itens da Cotação
+              </p>
+              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {pedido.itens.length}{' '}
+                {pedido.itens.length === 1 ? 'produto' : 'produtos'}
               </span>
             </div>
-          </div>
 
-          {/* Itens do Pedido */}
-          <h5 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Icon name="inventory_2" className="text-orange-500" /> Itens da
-            Cotação
-          </h5>
-          <div className="space-y-3 mb-8">
-            {pedido.itens.map((item) => (
-              <div
-                key={item.id_itens_pedido}
-                className="flex justify-between items-center p-3 border border-slate-100 rounded-lg hover:bg-slate-50"
-              >
+            <div className="space-y-2">
+              {pedido.itens.map((item, idx) => (
+                <motion.div
+                  key={item.id_itens_pedido}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-orange-200 hover:bg-orange-50/30 transition-colors"
+                >
+                  {/* Índice visual */}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <span className="text-orange-600 text-xs font-black">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-slate-800">
+                        Produto{' '}
+                        <span className="font-mono text-orange-600">
+                          #{item.produto_id}
+                        </span>
+                      </p>
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                        Item #{item.id_itens_pedido}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs text-slate-500">
+                        Qtd:{' '}
+                        <span className="font-bold text-slate-700">
+                          {item.quantidade}
+                        </span>
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-xs text-slate-500">
+                        Unitário:{' '}
+                        <span className="font-bold text-slate-700">
+                          {formatPrice(item.preco_unitario)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-black text-slate-900">
+                      {formatPrice(item.preco_total)}
+                    </p>
+                    <p className="text-[10px] text-slate-400">subtotal</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Resumo financeiro */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    Produto ID: #{item.produto_id}
+                  <p className="text-orange-100 text-xs font-bold uppercase tracking-wider">
+                    Total Geral
                   </p>
-                  <p className="text-xs text-slate-500">
-                    Qtd: {item.quantidade} x {formatPrice(item.preco_unitario)}
+                  <p className="text-white text-2xl font-black mt-0.5">
+                    {formatPrice(total)}
                   </p>
                 </div>
-                <p className="font-bold text-slate-900">
-                  {formatPrice(item.preco_total)}
-                </p>
+                <div className="text-right">
+                  <p className="text-orange-100 text-xs">
+                    {pedido.itens.length} produto(s)
+                  </p>
+                  <p className="text-orange-200 text-xs mt-0.5">
+                    {pedido.itens.reduce((a, i) => a + i.quantidade, 0)}{' '}
+                    unidades
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-
-          {/* Totais e Datas */}
-          <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-            <div>
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
-                Data do Pedido
-              </p>
-              <p className="text-sm text-slate-700">
-                {formatDate(pedido.pedido_time)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
-                Total Geral
-              </p>
-              <p className="text-2xl font-black text-orange-600">
-                {formatPrice(calculateOrderTotal(pedido.itens))}
-              </p>
             </div>
           </div>
         </div>
 
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        {/* ── Footer ── */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+          <p className="text-xs text-slate-400 font-mono truncate max-w-xs hidden sm:block">
+            {pedido.numero_cotacao}
+          </p>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
@@ -371,7 +564,7 @@ const OrderDetailsModal = ({
 
 export default function OrdersPage() {
   const queryClient = useQueryClient();
-  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [selectedPedidoId, setSelectedPedidoId] = useState<number | null>(null);
   const { toasts, show: showToast } = useToast();
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
@@ -381,7 +574,7 @@ export default function OrdersPage() {
 
   const handleSearch = () => {
     setFilters((f) => ({ ...f, search: inputSearch }));
-    setPage(1); // Reseta para a primeira página ao buscar
+    setPage(1);
   };
 
   const { data: response, isLoading } = useQuery<PedidosResponse>({
@@ -396,17 +589,11 @@ export default function OrdersPage() {
 
   const filtered = allPedidos.filter((p) => {
     const q = filters.search.toLowerCase();
-
-    // Usamos (p.campo || '') para garantir que sempre teremos uma string,
-    // mesmo que o banco retorne null ou undefined
     const nomeCliente = (p.nomeCliente || '').toLowerCase();
     const numeroCotacao = (p.numero_cotacao || '').toLowerCase();
-
     const matchSearch =
       !q || nomeCliente.includes(q) || numeroCotacao.includes(q);
-
     const matchStatus = !filters.status || p.statusPedido === filters.status;
-
     return matchSearch && matchStatus;
   });
 
@@ -414,7 +601,6 @@ export default function OrdersPage() {
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Stats
   const total = allPedidos.length;
   const pendentes = allPedidos.filter(
     (p) => p.statusPedido === 'Pendente'
@@ -612,7 +798,9 @@ export default function OrdersPage() {
                           <RowMenu
                             pedido={pedido}
                             onDelete={(id) => deleteMutation.mutate(id)}
-                            onView={(p) => setSelectedPedido(p)}
+                            onView={(p) =>
+                              setSelectedPedidoId(p.pedidoCotacaoId)
+                            }
                           />
                         </td>
                       </motion.tr>
@@ -631,11 +819,12 @@ export default function OrdersPage() {
           />
         </div>
       </div>
+
       <AnimatePresence>
-        {selectedPedido && (
+        {selectedPedidoId !== null && (
           <OrderDetailsModal
-            pedido={selectedPedido}
-            onClose={() => setSelectedPedido(null)}
+            pedidoId={selectedPedidoId}
+            onClose={() => setSelectedPedidoId(null)}
           />
         )}
       </AnimatePresence>
