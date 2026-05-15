@@ -479,7 +479,10 @@ const EditCategoriaModal = ({
 
           {editMutation.isError && (
             <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <Icon name="error" className="text-red-500 text-base flex-shrink-0" />
+              <Icon
+                name="error"
+                className="text-red-500 text-base flex-shrink-0"
+              />
               <p className="text-sm text-red-600 font-medium">
                 Erro ao actualizar categoria. Tente novamente.
               </p>
@@ -591,7 +594,10 @@ const DeleteCategoriaModal = ({
 
           {deleteMutation.isError && (
             <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl mb-4">
-              <Icon name="error" className="text-red-500 text-base flex-shrink-0" />
+              <Icon
+                name="error"
+                className="text-red-500 text-base flex-shrink-0"
+              />
               <p className="text-sm text-red-600 font-medium">
                 Erro ao eliminar. Tente novamente.
               </p>
@@ -640,9 +646,15 @@ export default function CategoriesPage() {
   const [inputSearch, setInputSearch] = useState('');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(null);
-  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
-  const [deletingCategoria, setDeletingCategoria] = useState<Categoria | null>(null);
+  const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | null>(
+    null
+  );
+  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(
+    null
+  );
+  const [deletingCategoria, setDeletingCategoria] = useState<Categoria | null>(
+    null
+  );
   const [newCat, setNewCat] = useState({ nome_cat: '', descricao_cat: '' });
   const PAGE_SIZE = 10;
 
